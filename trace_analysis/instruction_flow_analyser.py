@@ -34,7 +34,7 @@ class FlowAnalyser:
             if uuid in seen_uuids:
                 continue
             seen_uuids.add(uuid)
-            exec_trace.extend(
+            exec_trace.append(
                 self.get_flow_by_trace(
                     self.trace_db.get_trace_by_uuid(cluster, socket, core, uuid)
                 )
@@ -65,7 +65,7 @@ class FlowAnalyser:
                 events[0][0] == "schedule"
                 and (
                     events[-1][0] == "commit"
-                    or events[-2][0] == "commit"
+                    or "commit" in set(e[0] for e in events)
                     and "coalescer" in events[-1][0]
                 )
             ):
@@ -84,27 +84,25 @@ class FlowAnalyser:
                 )
             pc = pcs.pop() if len(pcs) == 1 else None
             tmask = next((r.tmask for r in trace if r.tmask is not None), None)
-            exec_trace.append(
-                FlowInstruction(
-                    line_no=line_no,
-                    uuid=uuid,
-                    wid=wid,
-                    pc=pc,
-                    tmask=tmask,
-                    function_name=(
-                        self.kernel_db.find_function_by_pc(pc)
-                        if pc is not None
-                        else "<unknown-pc>"
-                    ),
-                    instruction_text=(
-                        self.kernel_db.instructions.get(pc).text
-                        if pc is not None and pc in self.kernel_db.instructions
-                        else "<unknown-inst>"
-                    ),
-                    first_cycle=trace_records[0].cycle,
-                    last_cycle=trace_records[-1].cycle,
-                    events=events,
-                    trace=trace_records,
-                )
+            
+            return FlowInstruction(
+                line_no=line_no,
+                uuid=uuid,
+                wid=wid,
+                pc=pc,
+                tmask=tmask,
+                function_name=(
+                    self.kernel_db.find_function_by_pc(pc)
+                    if pc is not None
+                    else "<unknown-pc>"
+                ),
+                instruction_text=(
+                    self.kernel_db.instructions.get(pc).text
+                    if pc is not None and pc in self.kernel_db.instructions
+                    else "<unknown-inst>"
+                ),
+                first_cycle=trace_records[0].cycle,
+                last_cycle=trace_records[-1].cycle,
+                events=events,
+                trace=trace_records,
             )
-            return exec_trace
