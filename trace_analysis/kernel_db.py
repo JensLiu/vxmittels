@@ -46,7 +46,10 @@ class KernelDatabase:
     def from_file(cls, dump_file: str) -> "KernelDatabase":
         func_header_re = re.compile(r"^\s*([0-9a-fA-F]+)\s+<([^>]+)>:\s*$")
         inst_re = re.compile(
-            r"^\s*([0-9a-fA-F]+):\s+([0-9a-fA-F]{2}(?:\s+[0-9a-fA-F]{2}){1,7})\s+([^\s]+)(?:\s+(.*?))?\s*$"
+            r"^\s*([0-9a-fA-F]+):\s+("
+            r"(?:[0-9a-fA-F]{2}(?:\s+[0-9a-fA-F]{2}){1,7})"  # e.g. 'f3 22 10 fc'
+            r"|(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{16})"  # e.g. 'fc1022f3' or 64-bit words
+            r")\s+([^\s]+)(?:\s+(.*?))?\s*$"
         )
         target_re = re.compile(r"(0x[0-9a-fA-F]+)\s*<([^>]+)>")
 

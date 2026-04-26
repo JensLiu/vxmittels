@@ -3,7 +3,7 @@ from kernel_db import KernelDatabase
 from instruction_flow_analyser import FlowAnalyser, FlowInstruction
 
 
-class DataTraceAnalyser:
+class DivergenceAnalyser:
     def __init__(
         self,
         kernel_db: KernelDatabase,
@@ -60,6 +60,7 @@ class DataTraceAnalyser:
             lsu_trace = [r for r in instr.trace if "lsu" in r.event]
             lsu_trace_cmp = [r for r in instr_cmp.trace if "lsu" in r.event]
             for t, tc in zip(lsu_trace, lsu_trace_cmp):
+                t.lsu_payload
                 if t.raw_line != tc.raw_line:
                     data_flow_divergence_points.append((instr, instr_cmp))
                     break
@@ -119,7 +120,7 @@ if __name__ == "__main__":
     #         print(f"{t.raw_line} \n {tc.raw_line}")
     #         print("\n")
 
-    data_trace_analyser = DataTraceAnalyser(kernel_db, trace_db, trace_db_cmp)
+    data_trace_analyser = DivergenceAnalyser(kernel_db, trace_db, trace_db_cmp)
     # control_flow_divergence_points, data_flow_divergence_points = data_trace_analyser.analyse_flow_by_id("cluster0", "socket0", "core3", 1)
     # first_data_divergence = data_flow_divergence_points[0] if data_flow_divergence_points else None
     # if first_data_divergence:

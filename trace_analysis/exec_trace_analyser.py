@@ -13,6 +13,11 @@ class ExecTraceAnalyser:
         self.execution_analysis_context = None
         self.flow_analyser = FlowAnalyser(kernel_db, trace_db)
 
+    @staticmethod
+    def __fmt_func_name(name: Optional[str], width: int) -> str:
+        s = name if isinstance(name, str) and name else "<?>"
+        return f"{s:<{width}s}"
+
     def __analyse_control_flow(self, flow):
         func_trace = []
         for i, inst_flow in enumerate(flow):
@@ -50,7 +55,7 @@ class ExecTraceAnalyser:
             arrow = "->" if kind == "call" else "<-"
             label = "CALL" if kind == "call" else "RET "
             lines.append(
-                f"  {arrow} {label} {inst.function_name:<30s}  "
+                f"  {arrow} {label} {self.__fmt_func_name(inst.function_name, 30)}  "
                 f"pc={self.__fmt_pc(inst.pc)}  "
                 f"cycle={self.__fmt_cycles(inst.first_cycle, inst.last_cycle):<12s}  "
                 f"uuid=#{inst.uuid}"
@@ -70,10 +75,12 @@ class ExecTraceAnalyser:
                 f"  [{cycle_str:>12s}]{latency:<10s}  "
                 f"{self.__fmt_pc(inst.pc)}  "
                 f"{inst.instruction_text:<36s}  "
-                f"{inst.function_name:<28s}  "
+                f"{self.__fmt_func_name(inst.function_name, 28)}  "
                 f"tmask={inst.tmask or '????'}  uuid=#{inst.uuid}"
             )
-            stage_str = " -> ".join([f"{event}(x{count})" for event, count in inst.events])
+            stage_str = " -> ".join(
+                [f"{event}(x{count})" for event, count in inst.events]
+            )
             lines.append(f"    stages: {stage_str}")
         return "\n".join(lines) + "\n"
 
@@ -91,7 +98,9 @@ class ExecTraceAnalyser:
                     wids = self.trace_db.get_wids(cluster, socket, core)
                     print(f"    {core}: wids={wids}")
                     for wid in wids:
-                        exec_trace = self.flow_analyser.get_flow(cluster, socket, core, wid)
+                        exec_trace = self.flow_analyser.get_flow(
+                            cluster, socket, core, wid
+                        )
                         func_trace = self.__analyse_control_flow(exec_trace)
                         detail[(cluster, socket, core, wid)] = (exec_trace, func_trace)
                         summary[(cluster, socket, core, wid)] = func_trace
@@ -127,9 +136,9 @@ class ExecTraceAnalyser:
 
 
 if __name__ == "__main__":
-    trace_path = "example/full_trace.log"
-    kernel_path = "example/kernel.dump"
-    report_path = "example/report.txt"
+    trace_path = "bug/run.log"
+    kernel_path = "bug/kernel.dump"
+    report_path = "bug/log.analysis"
     analyser = ExecTraceAnalyser(
         kernel_db=KernelDatabase.from_file(kernel_path),
         trace_db=TraceDatabase.from_file(trace_path),
@@ -137,3 +146,8 @@ if __name__ == "__main__":
     report = analyser.analysis_report()
     with open(report_path, "w") as f:
         f.write(report)
+
+    # trace_db = TraceDatabase.from_file(trace_path)
+    # trace = trace_db.get_trace_by_uuid("cluster0", "socket0", "core0", 33)
+    # for record in trace:
+    #     print(record.raw_line)
